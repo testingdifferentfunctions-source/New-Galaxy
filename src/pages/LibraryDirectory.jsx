@@ -7,6 +7,7 @@ import LanguageToggle from "@/components/LanguageToggle";
 import LibraryCardView from "@/components/LibraryCardView";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
+import { mockLibraries } from "@/lib/mockData";
 
 export default function LibraryDirectory() {
   const { language, t } = useLanguage();
@@ -17,19 +18,9 @@ export default function LibraryDirectory() {
   const [semanticLoading, setSemanticLoading] = useState(false);
 
   useEffect(() => {
-    base44.entities.LibraryCard.list("title_en")
-      .then((data) => {
-        // ЗАХИСТ 1: Перевіряємо, чи прийшов масив, інакше ставимо порожній масив []
-        setCards(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Помилка завантаження даних API:", error);
-        // ЗАХИСТ 2: У разі збою з'єднання ставимо порожній масив
-        setCards([]);
-        setLoading(false);
-      });
-  }, []);
+  setCards(mockLibraries);
+  setLoading(false);
+}, []);
 
   // Debounced semantic search via the LLM integration.
   // Ranks libraries by semantic relevance to the query in the active language.

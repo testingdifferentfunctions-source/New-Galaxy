@@ -12,7 +12,6 @@ export default function LibraryDirectory() {
   const { language, t } = useLanguage();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
   const [query, setQuery] = useState("");
   const [semanticResults, setSemanticResults] = useState(null);
   const [semanticLoading, setSemanticLoading] = useState(false);
@@ -20,12 +19,14 @@ export default function LibraryDirectory() {
   useEffect(() => {
     base44.entities.LibraryCard.list("title_en")
       .then((data) => {
-        setCards(data);
+        // ЗАХИСТ 1: Перевіряємо, чи прийшов масив, інакше ставимо порожній масив []
+        setCards(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("[LibraryDirectory] Failed to fetch library cards:", err);
-        setFetchError(err);
+      .catch((error) => {
+        console.error("Помилка завантаження даних API:", error);
+        // ЗАХИСТ 2: У разі збою з'єднання ставимо порожній масив
+        setCards([]);
         setLoading(false);
       });
   }, []);
@@ -41,7 +42,7 @@ export default function LibraryDirectory() {
     setSemanticLoading(true);
     const handle = setTimeout(async () => {
       try {
-        const catalog = cards.map((c) => ({
+        const catalog = (Array.isArray(cards) ? cards : []).map((c) => ({
           id: c.id,
           slug: c.slug,
           title: language === "uk" ? c.title_uk : c.title_en,
@@ -66,11 +67,13 @@ Respond with a JSON object { "results": [id, ...] } listing the most relevant li
         });
         const ids =
           res?.results || res?.data?.results || res?.output?.results || [];
-        const byId = new Map(cards.map((c) => [c.id, c]));
-        const bySlug = new Map(cards.map((c) => [c.slug, c]));
-        const ranked = ids
+        const byId = new Map((Array.isArray(cards) ? cards : []).map((c) => [c.id, c]));
+        const bySlug = new Map((Array.isArray(cards) ? cards : []).map((c) => [c.slug, c]));
+        
+        const ranked = Array.isArray(ids) ? ids
           .map((id) => byId.get(id) || bySlug.get(id))
-          .filter(Boolean);
+          .filter(Boolean) : [];
+          
         setSemanticResults(ranked.length > 0 ? ranked : null);
       } catch {
         setSemanticResults(null);
@@ -83,16 +86,21 @@ Respond with a JSON object { "results": [id, ...] } listing the most relevant li
 
   const displayed = useMemo(() => {
     const q = query.trim();
-    if (q.length === 0) return cards;
-    if (semanticResults) return semanticResults;
+    const safeCards = Array.isArray(cards) ? cards : [];
+    const safeSemantic = Array.isArray(semanticResults) ? semanticResults : [];
+
+    if (q.length === 0) return safeCards;
+    if (semanticResults) return safeSemantic;
+    
     const ql = q.toLowerCase();
-    return cards.filter(
+    // ЗАХИСТ 3: Використовуємо .filter тільки для масиву
+    return safeCards.filter(
       (c) =>
         c.title_uk?.toLowerCase().includes(ql) ||
         c.title_en?.toLowerCase().includes(ql) ||
         c.description_uk?.toLowerCase().includes(ql) ||
         c.description_en?.toLowerCase().includes(ql) ||
-        c.tags?.some((tag) => tag.toLowerCase().includes(ql))
+        (Array.isArray(c.tags) && c.tags.some((tag) => tag.toLowerCase().includes(ql)))
     );
   }, [cards, query, semanticResults]);
 
@@ -155,23 +163,14 @@ Respond with a JSON object { "results": [id, ...] } listing the most relevant li
               />
             ))}
           </div>
-        ) : fetchError ? (
+        ) : !Array.isArray(displayed) || displayed.length === 0 ? ( // ЗАХИСТ 4: Перевірка перед малюванням
           <div className="text-center py-24 text-[#A0A0A0]">
-            <p className="mb-2">
-              {t("Не вдалося завантажити дані. Перевірте підключення до API.", "Failed to load data. Check the API connection.")}
-            </p>
-            <p className="text-xs text-[#666666] break-all">
-              {String(fetchError?.message || fetchError)}
-            </p>
-          </div>
-        ) : displayed.length === 0 ? (
-          <div className="text-center py-24 text-[#A0A0A0]">
-            {t("Бібліотек не знайдено", "No libraries found")}
+            {t("Бібліотек не знайдено або сталася помилка з'єднання", "No libraries found or connection error")}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayed.map((card) => (
-              <LibraryCardView key={card.id} card={card} />
+              <LibraryCardView key={card.id || card.slug || Math.random()} card={card} /> // Додано fallback для ключа
             ))}
           </div>
         )}

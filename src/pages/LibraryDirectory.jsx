@@ -12,6 +12,7 @@ export default function LibraryDirectory() {
   const { language, t } = useLanguage();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [query, setQuery] = useState("");
   const [semanticResults, setSemanticResults] = useState(null);
   const [semanticLoading, setSemanticLoading] = useState(false);
@@ -22,7 +23,11 @@ export default function LibraryDirectory() {
         setCards(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error("[LibraryDirectory] Failed to fetch library cards:", err);
+        setFetchError(err);
+        setLoading(false);
+      });
   }, []);
 
   // Debounced semantic search via the LLM integration.
@@ -149,6 +154,15 @@ Respond with a JSON object { "results": [id, ...] } listing the most relevant li
                 className="h-52 rounded-xl border border-[#333333] bg-[#1a1a1a] animate-pulse"
               />
             ))}
+          </div>
+        ) : fetchError ? (
+          <div className="text-center py-24 text-[#A0A0A0]">
+            <p className="mb-2">
+              {t("Не вдалося завантажити дані. Перевірте підключення до API.", "Failed to load data. Check the API connection.")}
+            </p>
+            <p className="text-xs text-[#666666] break-all">
+              {String(fetchError?.message || fetchError)}
+            </p>
           </div>
         ) : displayed.length === 0 ? (
           <div className="text-center py-24 text-[#A0A0A0]">

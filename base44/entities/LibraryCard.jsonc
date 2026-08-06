@@ -1,0 +1,98 @@
+{
+  "name": "LibraryCard",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly unique identifier, e.g. 'numpy'",
+      "x-base44-unique": true
+    },
+    "title_uk": {
+      "type": "string",
+      "description": "Library title in Ukrainian"
+    },
+    "title_en": {
+      "type": "string",
+      "description": "Library title in English"
+    },
+    "description_uk": {
+      "type": "string",
+      "maxLength": 255,
+      "description": "Short summary in Ukrainian (max 255 chars)"
+    },
+    "description_en": {
+      "type": "string",
+      "maxLength": 255,
+      "description": "Short summary in English (max 255 chars)"
+    },
+    "content_uk": {
+      "type": "array",
+      "description": "Block-based editor content in Ukrainian (JSONB equivalent)",
+      "items": {
+        "type": "object"
+      }
+    },
+    "content_en": {
+      "type": "array",
+      "description": "Block-based editor content in English (JSONB equivalent)",
+      "items": {
+        "type": "object"
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Categorization tags"
+    },
+    "official_url": {
+      "type": "string",
+      "description": "Official documentation/homepage URL"
+    },
+    "pypi_url": {
+      "type": "string",
+      "description": "Manual URL to the library's PyPI project page"
+    },
+    "embedding_uk": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Semantic embedding vector for Ukrainian content (pgvector equivalent)"
+    },
+    "embedding_en": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Semantic embedding vector for English content (pgvector equivalent)"
+    }
+  },
+  "required": [
+    "slug",
+    "title_uk",
+    "title_en",
+    "description_uk",
+    "description_en",
+    "official_url"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
